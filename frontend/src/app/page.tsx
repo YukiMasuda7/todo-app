@@ -4,8 +4,8 @@ export default function Home() {
       <div className="bg-gray-300/50 ">
         <ul>
           <li className="flex items-center gap-2 p-2 border-b">
-            <input type="checkbox" />
-            <span className="flex-1">タイトル</span>
+            <input type="checkbox" className="size-5" />
+            <span className="flex-1 text-xl">タイトル</span>
             <button className="px-2 py-1 bg-blue-500 text-white rounded">
               詳細
             </button>
@@ -17,8 +17,8 @@ export default function Home() {
             </button>
           </li>
           <li className="flex items-center gap-2 p-2 border-b">
-            <input type="checkbox" />
-            <span className="flex-1">タイトル</span>
+            <input type="checkbox" className="size-5" />
+            <span className="flex-1 text-xl">タイトル</span>
             <button className="px-2 py-1 bg-blue-500 text-white rounded">
               詳細
             </button>
@@ -30,8 +30,8 @@ export default function Home() {
             </button>
           </li>
           <li className="flex items-center gap-2 p-2 border-b">
-            <input type="checkbox" />
-            <span className="flex-1">タイトル</span>
+            <input type="checkbox" className="size-5" />
+            <span className="flex-1 text-xl">タイトル</span>
             <button className="px-2 py-1 bg-blue-500 text-white rounded">
               詳細
             </button>
