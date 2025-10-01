@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { error } from "console";
 import express, { type Request, type Response } from "express";
 import { z } from "zod";
 
@@ -33,6 +34,10 @@ interface GetItemsResponse {
 }
 
 interface CreateItemResponse {
+  item: TodoItem;
+}
+
+interface DeleteItemResponse {
   item: TodoItem;
 }
 
@@ -81,9 +86,9 @@ app.post(
       return res.status(201).json({ item: newItem });
     } catch (err) {
       if (err instanceof z.ZodError) {
-        const firstError = err.issues[0]; // errors ではなく issues
+        const firstError = err.issues[0];
         return res.status(400).json({
-          error: firstError ? firstError.message : "バリデーションエラー",
+          error: firstError ? firstError.message : "Validation error",
         });
       }
       console.log(err);
@@ -95,3 +100,36 @@ app.post(
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
 });
+
+// 既存のtodoを削除する
+app.delete(
+  "/items/:id",
+  async (
+    req: Request<{ id: number }>,
+    res: Response<DeleteItemResponse | ErrorResponse>
+  ) => {
+    try {
+      const { id } = req.params;
+      const numericId = Number(id);
+
+      //idがnumber型になっているかの判定
+      if (isNaN(numericId)) {
+        return res.status(400).json({ error: "Invalid ID" });
+      }
+
+      const deletedItem = await prisma.todo.delete({
+        where: { id: numericId },
+      });
+
+      return res.status(200).json({ item: deletedItem });
+    } catch (err) {
+      //idが存在するのかの判定
+      if (err instanceof Error && "code" in err && err.code === "P2025") {
+        return res.status(404).json({ error: "Todo not found" });
+      }
+
+      console.log(err);
+      return res.status(500).json({ error: "Failed to delete item" });
+    }
+  }
+);
