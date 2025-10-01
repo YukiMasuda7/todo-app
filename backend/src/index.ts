@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { error } from "console";
 import express, { type Request, type Response } from "express";
 import { z } from "zod";
 
