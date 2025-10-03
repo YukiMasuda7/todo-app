@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import express, { type Request, type Response } from "express";
 import { z } from "zod";
+import cors from "cors";
 
 // 1. 基本的なエンティティ型
 interface TodoItem {
@@ -48,6 +49,7 @@ const prisma = new PrismaClient();
 const port = 5000;
 
 app.use(express.json());
+app.use(cors());
 
 // 全てのtodoを取得
 app.get(
