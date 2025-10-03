@@ -27,16 +27,14 @@ const createTodoSchema = z.object({
 // 3. リクエスト型
 type CreateTodoRequest = z.infer<typeof createTodoSchema>;
 
+type EditTodoRequest = z.infer<typeof createTodoSchema>;
+
 // 4. レスポンス型
 interface GetItemsResponse {
   items: TodoItem[];
 }
 
-interface CreateItemResponse {
-  item: TodoItem;
-}
-
-interface DeleteItemResponse {
+interface TodoItemResponse {
   item: TodoItem;
 }
 
@@ -51,7 +49,7 @@ const port = 5000;
 
 app.use(express.json());
 
-//全てのtodoを取得
+// 全てのtodoを取得
 app.get(
   "/items",
   async (req: Request, res: Response<GetItemsResponse | ErrorResponse>) => {
@@ -60,17 +58,17 @@ app.get(
       return res.status(200).json({ items });
     } catch (err) {
       console.log(err);
-      res.status(500).json({ error: "Failed to get Items" });
+      res.status(500).json({ error: "Failed to get items" });
     }
   }
 );
 
-//新たなtodoを作成
+// 新たなtodoを作成
 app.post(
   "/items",
   async (
-    req: Request<{}, CreateItemResponse | ErrorResponse, CreateTodoRequest>,
-    res: Response<CreateItemResponse | ErrorResponse>
+    req: Request<{}, TodoItemResponse | ErrorResponse, CreateTodoRequest>,
+    res: Response<TodoItemResponse | ErrorResponse>
   ) => {
     try {
       const validatedData = createTodoSchema.parse(req.body);
@@ -78,8 +76,8 @@ app.post(
 
       const newItem = await prisma.todo.create({
         data: {
-          title: title.trim(), // .trim()は前後の空白のみ除去
-          content,
+          title: title.trim(),
+          content: content.trim(),
         },
       });
       return res.status(201).json({ item: newItem });
@@ -96,22 +94,18 @@ app.post(
   }
 );
 
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
-});
-
-// 既存のtodoを削除する
+// 既存のtodoを削除
 app.delete(
   "/items/:id",
   async (
-    req: Request<{ id: number }>,
-    res: Response<DeleteItemResponse | ErrorResponse>
+    req: Request<{ id: string }>,
+    res: Response<TodoItemResponse | ErrorResponse>
   ) => {
     try {
       const { id } = req.params;
       const numericId = Number(id);
 
-      //idがnumber型になっているかの判定
+      // idがnumber型になっているかの判定
       if (isNaN(numericId)) {
         return res.status(400).json({ error: "Invalid ID" });
       }
@@ -122,7 +116,7 @@ app.delete(
 
       return res.status(200).json({ item: deletedItem });
     } catch (err) {
-      //idが存在するのかの判定
+      // idが存在するのかの判定
       if (err instanceof Error && "code" in err && err.code === "P2025") {
         return res.status(404).json({ error: "Todo not found" });
       }
@@ -132,3 +126,95 @@ app.delete(
     }
   }
 );
+
+// 既存のtodoの編集
+app.patch(
+  "/items/:id",
+  async (
+    req: Request<
+      { id: string },
+      TodoItemResponse | ErrorResponse,
+      EditTodoRequest
+    >,
+    res: Response<TodoItemResponse | ErrorResponse>
+  ) => {
+    try {
+      const { id } = req.params;
+      const numericId = Number(id);
+
+      if (isNaN(numericId)) {
+        return res.status(400).json({ error: "Invalid ID" });
+      }
+
+      const validatedData = createTodoSchema.parse(req.body);
+      const { title, content } = validatedData;
+
+      const editedItem = await prisma.todo.update({
+        where: { id: numericId },
+        data: {
+          title: title.trim(),
+          content: content.trim(),
+        },
+      });
+      return res.status(200).json({ item: editedItem });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        const firstError = err.issues[0];
+        return res.status(400).json({
+          error: firstError ? firstError.message : "Validation error",
+        });
+      }
+      if (err instanceof Error && "code" in err && err.code === "P2025") {
+        return res.status(404).json({ error: "Todo not found" });
+      }
+      console.log(err);
+      return res.status(500).json({ error: "Failed to edit item" });
+    }
+  }
+);
+
+// todoのcompleted状態の変更
+app.patch(
+  "/items/:id/status",
+  async (
+    req: Request<{ id: string }>,
+    res: Response<TodoItemResponse | ErrorResponse>
+  ) => {
+    try {
+      const { id } = req.params;
+      const numericId = Number(id);
+
+      if (isNaN(numericId)) {
+        return res.status(400).json({ error: "Invalid ID" });
+      }
+
+      const currentTodo = await prisma.todo.findUnique({
+        where: { id: numericId },
+      });
+
+      if (!currentTodo) {
+        return res.status(404).json({ error: "Todo not found" });
+      }
+
+      const updatedItem = await prisma.todo.update({
+        where: { id: numericId },
+        data: {
+          completed: !currentTodo.completed,
+        },
+      });
+
+      return res.status(200).json({ item: updatedItem });
+    } catch (err) {
+      if (err instanceof Error && "code" in err && err.code === "P2025") {
+        return res.status(404).json({ error: "Todo not found" });
+      }
+
+      console.log(err);
+      return res.status(500).json({ error: "Failed to toggle item status" });
+    }
+  }
+);
+
+app.listen(port, () => {
+  console.log(`Server is running at http://localhost:${port}`);
+});
