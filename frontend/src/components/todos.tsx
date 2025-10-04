@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { todoApi, TodoItem } from "@/lib/api";
+import LoadingSpinner from "./LoadingSpinner";
 
 const Todos = () => {
   const [todos, setTodos] = useState<TodoItem[]>([]);
@@ -22,37 +23,72 @@ const Todos = () => {
     }
   };
 
+  // 完了状態の切り替え
+  const handleToggle = async (id: number) => {
+    try {
+      const response = await todoApi.toggleTodoStatus(id);
+      setTodos(
+        todos.map((todo) => (todo.id === id ? response.data.item : todo))
+      );
+    } catch (error) {
+      console.error("Failed to toggle status:", error);
+    }
+  };
+
   useEffect(() => {
     fetchTodos();
   }, []);
 
+  useEffect(() => {
+    console.log(todos);
+  }, [todos]);
+
+  // ローディング状態の表示
+  if (loading) {
+    return (
+      <>
+        <LoadingSpinner />
+      </>
+    );
+  }
   return (
     <div>
       <div className="min-h-screen p-5">
-        <div className="bg-gray-300/50 ">
-          <ul>
-            {todos.map((todo) => {
-              return (
-                <li
-                  key={todo.id}
-                  className="flex items-center gap-2 p-2 border-b"
-                >
-                  <input type="checkbox" className="size-5" />
-                  <span className="flex-1 text-xl">{todo.title}</span>
-                  <button className="px-2 py-1 bg-blue-500 text-white rounded">
-                    詳細
-                  </button>
-                  <button className="px-2 py-1 bg-green-500 text-white rounded">
-                    編集
-                  </button>
-                  <button className="px-2 py-1 bg-red-500 text-white rounded">
-                    削除
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        {!todos ? (
+          <div className="text-center text-gray-500 mt-10">
+            <p className="text-xl">Todoがありません</p>
+          </div>
+        ) : (
+          <div className="bg-gray-300/50 ">
+            <ul>
+              {todos.map((todo) => {
+                return (
+                  <li
+                    key={todo.id}
+                    className="flex items-center gap-2 p-2 border-b"
+                  >
+                    <input
+                      type="checkbox"
+                      className="size-5 cursor-pointer"
+                      checked={Boolean(todo.completed)}
+                      onChange={() => handleToggle(todo.id)}
+                    />
+                    <span className="flex-1 text-xl">{todo.title}</span>
+                    <button className="px-2 py-1 bg-blue-500 text-white rounded cursor-pointer">
+                      詳細
+                    </button>
+                    <button className="px-2 py-1 bg-green-500 text-white rounded cursor-pointer">
+                      編集
+                    </button>
+                    <button className="px-2 py-1 bg-red-500 text-white rounded cursor-pointer">
+                      削除
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
