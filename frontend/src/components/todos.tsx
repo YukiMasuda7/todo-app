@@ -1,12 +1,17 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { todoApi, TodoItem } from "@/lib/api";
+import { todoApi } from "@/lib/api";
+import { TodoItem } from "@/types";
 import LoadingSpinner from "./LoadingSpinner";
+import DetailModal from "./Modals/DetailModal";
 
 const Todos = () => {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [selectedTodo, setSelectedTodo] = useState<TodoItem | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // データ取得
   const fetchTodos = async () => {
@@ -33,6 +38,17 @@ const Todos = () => {
     } catch (error) {
       console.error("Failed to toggle status:", error);
     }
+  };
+
+  const handleOpenDetail = (todo: TodoItem) => {
+    setSelectedTodo(todo);
+    setIsDetailModalOpen(true);
+    console.log(isDetailModalOpen);
+  };
+
+  const closeModals = () => {
+    setIsDetailModalOpen(false);
+    setSelectedTodo(null);
   };
 
   useEffect(() => {
@@ -74,7 +90,10 @@ const Todos = () => {
                       onChange={() => handleToggle(todo.id)}
                     />
                     <span className="flex-1 text-xl">{todo.title}</span>
-                    <button className="px-2 py-1 bg-blue-500 text-white rounded cursor-pointer">
+                    <button
+                      className="px-2 py-1 bg-blue-500 text-white rounded cursor-pointer"
+                      onClick={() => handleOpenDetail(todo)}
+                    >
                       詳細
                     </button>
                     <button className="px-2 py-1 bg-green-500 text-white rounded cursor-pointer">
@@ -89,6 +108,7 @@ const Todos = () => {
             </ul>
           </div>
         )}
+        <DetailModal isOpen={isDetailModalOpen} onClose={closeModals} />
       </div>
     </div>
   );

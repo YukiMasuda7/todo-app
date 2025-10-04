@@ -1,13 +1,5 @@
 import axios, { AxiosResponse, AxiosError } from "axios";
-
-export interface TodoItem {
-  id: number;
-  title: string;
-  content: string;
-  completed: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import { TodoItem } from "@/types";
 
 export interface GetItemsResponse {
   items: TodoItem[];
