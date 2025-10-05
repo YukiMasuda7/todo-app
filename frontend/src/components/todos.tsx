@@ -2,8 +2,11 @@
 import React, { useState, useEffect } from "react";
 import { todoApi } from "@/lib/api";
 import { TodoItem } from "@/types";
+import Header from "./Header";
+import CreateModal from "./Modals/CreateModal";
 import DetailModal from "./Modals/DetailModal";
 import EditModal from "./Modals/EditModal";
+import ConfirmDeleteModal from "./Modals/ConfirmDeleteModal";
 import ErrorMessage from "./ErrorMessage";
 import LoadingMessage from "./LoadingMessage";
 
@@ -14,8 +17,11 @@ const Todos = () => {
   const [error, setError] = useState<string>("");
 
   const [selectedTodo, setSelectedTodo] = useState<TodoItem | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isConfirmDeleteModalOpen, setIsConfirmDeleteModalOpen] =
+    useState(false);
 
   // 全てのtodoを取得
   const fetchTodos = async () => {
@@ -45,6 +51,26 @@ const Todos = () => {
     }
   };
 
+  // todoの新規作成
+  const handleCreateTodo = async (createData: {
+    title: string;
+    content: string;
+  }) => {
+    try {
+      setIsLoading(true);
+      setLoadingMessage("todoの新規作成中です");
+      const response = await todoApi.createTodo(createData);
+      setTodos([...todos, response.data.item]);
+      setIsCreateModalOpen(false);
+      setError("");
+    } catch (err) {
+      console.error("Failed to crate todo:", err);
+      setError("Todoの新規作成に失敗しました");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // todoの編集
   const handleUpdateTodo = async (
     id: number,
@@ -55,7 +81,7 @@ const Todos = () => {
   ) => {
     try {
       setIsLoading(true);
-      setLoadingMessage("編集中です");
+      setLoadingMessage("todoの編集中です");
       const response = await todoApi.updateTodo(id, updateData);
       setTodos(
         todos.map((todo) => (todo.id === id ? response.data.item : todo))
@@ -70,10 +96,34 @@ const Todos = () => {
     }
   };
 
+  const handleDeleteTodo = async (id: number) => {
+    try {
+      setIsLoading(true);
+      setLoadingMessage("todoの削除中です");
+      await todoApi.deleteTodo(id);
+      setTodos(todos.filter((todo) => todo.id !== id));
+      setIsConfirmDeleteModalOpen(false);
+      setError("");
+    } catch (err) {
+      console.error("Failed to update todo:", err);
+      setError("Todoの削除に失敗しました");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // モーダルの開閉
+  const handleOpenCreateModal = () => {
+    setIsCreateModalOpen(true);
+  };
+
+  const closeCreateModal = () => {
+    setIsCreateModalOpen(false);
+  };
+
   const handleOpenDetailModal = (todo: TodoItem) => {
     setSelectedTodo(todo);
     setIsDetailModalOpen(true);
-    console.log(isDetailModalOpen);
   };
 
   const closeDetailModal = () => {
@@ -84,11 +134,20 @@ const Todos = () => {
   const handleOpenEditModal = (todo: TodoItem) => {
     setSelectedTodo(todo);
     setIsEditModalOpen(true);
-    console.log(isEditModalOpen);
   };
 
   const closeEditModal = () => {
     setIsEditModalOpen(false);
+    setSelectedTodo(null);
+  };
+
+  const handleOpenConfirmDeleteModal = (todo: TodoItem) => {
+    setSelectedTodo(todo);
+    setIsConfirmDeleteModalOpen(true);
+  };
+
+  const closeConfirmDeleteModal = () => {
+    setIsConfirmDeleteModalOpen(false);
     setSelectedTodo(null);
   };
 
@@ -108,8 +167,9 @@ const Todos = () => {
 
   return (
     <div>
+      <Header onCreateClick={() => handleOpenCreateModal()} />
       <div className="min-h-screen p-5">
-        {!todos ? (
+        {!todos.length ? (
           <div className="mt-10 text-center text-gray-500">
             <p className="text-xl">Todoがありません</p>
           </div>
@@ -133,18 +193,21 @@ const Todos = () => {
                         {todo.title}
                       </span>
                       <button
-                        className="px-2 py-1 text-white bg-blue-500 rounded cursor-pointer"
+                        className="px-2 py-1 text-white bg-blue-500 hover:bg-blue-600 rounded cursor-pointer"
                         onClick={() => handleOpenDetailModal(todo)}
                       >
                         詳細
                       </button>
                       <button
-                        className="px-2 py-1 text-white bg-green-500 rounded cursor-pointer"
+                        className="px-2 py-1 text-white bg-green-500 hover:bg-green-600 rounded cursor-pointer"
                         onClick={() => handleOpenEditModal(todo)}
                       >
                         編集
                       </button>
-                      <button className="px-2 py-1 text-white bg-red-500 rounded cursor-pointer">
+                      <button
+                        className="px-2 py-1 text-white bg-red-500 hover:bg-red-600 rounded cursor-pointer"
+                        onClick={() => handleOpenConfirmDeleteModal(todo)}
+                      >
                         削除
                       </button>
                     </li>
@@ -154,6 +217,14 @@ const Todos = () => {
             </div>
           </div>
         )}
+
+        <CreateModal
+          modalMode="新規作成"
+          isOpen={isCreateModalOpen}
+          onClose={closeCreateModal}
+          onCreate={handleCreateTodo}
+        />
+
         {selectedTodo && (
           <>
             <DetailModal
@@ -169,6 +240,14 @@ const Todos = () => {
               isOpen={isEditModalOpen}
               onClose={closeEditModal}
               onUpdate={handleUpdateTodo}
+            />
+
+            <ConfirmDeleteModal
+              modalMode="本当に削除しますか？"
+              selectedTodo={selectedTodo}
+              isOpen={isConfirmDeleteModalOpen}
+              onClose={closeConfirmDeleteModal}
+              onDelete={handleDeleteTodo}
             />
           </>
         )}

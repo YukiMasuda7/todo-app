@@ -1,5 +1,4 @@
 "use client";
-import { TodoItem } from "@/types";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
@@ -37,7 +36,7 @@ const CommonModal: React.FC<CommonModalProps> = ({
           <h1 className="w-3/5 text-4xl font-bold text-center">{modalMode}</h1>
           <div className="w-1/5 flex justify-end">
             <button
-              className="px-2 py-1 text-white bg-blue-500 rounded cursor-pointer"
+              className="px-2 py-1 text-white bg-blue-500 hover:bg-blue-600 rounded cursor-pointer"
               onClick={() => onClose()}
             >
               閉じる
