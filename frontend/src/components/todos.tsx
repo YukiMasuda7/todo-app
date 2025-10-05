@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from "react";
 import { todoApi } from "@/lib/api";
 import { TodoItem } from "@/types";
-import LoadingSpinner from "./LoadingSpinner";
 import DetailModal from "./Modals/DetailModal";
+import ErrorMessage from "./ErrorMessage";
+import LoadingMessage from "./LoadingMessage";
 
 const Todos = () => {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string>("");
 
   const [selectedTodo, setSelectedTodo] = useState<TodoItem | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -19,7 +20,7 @@ const Todos = () => {
       setLoading(true);
       const response = await todoApi.getAllTodos();
       setTodos(response.data.items);
-      setError(null);
+      setError("");
     } catch (err) {
       console.error("Failed to fetch todos:", err);
       setError("Todoの取得に失敗しました");
@@ -59,13 +60,14 @@ const Todos = () => {
     console.log(todos);
   }, [todos]);
 
+  // エラー時の表示
+  if (error) {
+    return <ErrorMessage error={error} />;
+  }
+
   // ローディング状態の表示
   if (loading) {
-    return (
-      <>
-        <LoadingSpinner />
-      </>
-    );
+    return <LoadingMessage message="Todoの取得中です" />;
   }
   return (
     <div>
