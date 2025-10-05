@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from "react";
 import { todoApi } from "@/lib/api";
 import { TodoItem } from "@/types";
-import LoadingSpinner from "./LoadingSpinner";
 import DetailModal from "./Modals/DetailModal";
+import ErrorMessage from "./ErrorMessage";
+import LoadingMessage from "./LoadingMessage";
 
 const Todos = () => {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string>("");
 
   const [selectedTodo, setSelectedTodo] = useState<TodoItem | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -19,7 +20,7 @@ const Todos = () => {
       setLoading(true);
       const response = await todoApi.getAllTodos();
       setTodos(response.data.items);
-      setError(null);
+      setError("");
     } catch (err) {
       console.error("Failed to fetch todos:", err);
       setError("Todoの取得に失敗しました");
@@ -59,56 +60,68 @@ const Todos = () => {
     console.log(todos);
   }, [todos]);
 
+  // エラー時の表示
+  if (error) {
+    return <ErrorMessage error={error} />;
+  }
+
   // ローディング状態の表示
   if (loading) {
-    return (
-      <>
-        <LoadingSpinner />
-      </>
-    );
+    return <LoadingMessage message="Todoの取得中です" />;
   }
+
   return (
     <div>
       <div className="min-h-screen p-5">
         {!todos ? (
-          <div className="text-center text-gray-500 mt-10">
+          <div className="mt-10 text-center text-gray-500">
             <p className="text-xl">Todoがありません</p>
           </div>
         ) : (
-          <div className="bg-gray-300/50 ">
-            <ul>
-              {todos.map((todo) => {
-                return (
-                  <li
-                    key={todo.id}
-                    className="flex items-center gap-2 p-2 border-b"
-                  >
-                    <input
-                      type="checkbox"
-                      className="size-5 cursor-pointer"
-                      checked={Boolean(todo.completed)}
-                      onChange={() => handleToggle(todo.id)}
-                    />
-                    <span className="flex-1 text-xl">{todo.title}</span>
-                    <button
-                      className="px-2 py-1 bg-blue-500 text-white rounded cursor-pointer"
-                      onClick={() => handleOpenDetail(todo)}
+          <div className="flex justify-center">
+            <div className="bg-gray-300/50 w-3/5">
+              <ul>
+                {todos.map((todo) => {
+                  return (
+                    <li
+                      key={todo.id}
+                      className="flex items-center gap-2 p-2 border-b"
                     >
-                      詳細
-                    </button>
-                    <button className="px-2 py-1 bg-green-500 text-white rounded cursor-pointer">
-                      編集
-                    </button>
-                    <button className="px-2 py-1 bg-red-500 text-white rounded cursor-pointer">
-                      削除
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                      <input
+                        type="checkbox"
+                        className="size-5 cursor-pointer"
+                        checked={Boolean(todo.completed)}
+                        onChange={() => handleToggle(todo.id)}
+                      />
+                      <span className="flex-1 text-xl truncate">
+                        {todo.title}
+                      </span>
+                      <button
+                        className="px-2 py-1 text-white bg-blue-500 rounded cursor-pointer"
+                        onClick={() => handleOpenDetail(todo)}
+                      >
+                        詳細
+                      </button>
+                      <button className="px-2 py-1 text-white bg-green-500 rounded cursor-pointer">
+                        編集
+                      </button>
+                      <button className="px-2 py-1 text-white bg-red-500 rounded cursor-pointer">
+                        削除
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </div>
         )}
-        <DetailModal isOpen={isDetailModalOpen} onClose={closeModals} />
+        {selectedTodo && (
+          <DetailModal
+            todo={selectedTodo}
+            isOpen={isDetailModalOpen}
+            onClose={closeModals}
+          />
+        )}
       </div>
     </div>
   );
