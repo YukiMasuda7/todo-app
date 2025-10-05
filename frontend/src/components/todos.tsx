@@ -3,21 +3,25 @@ import React, { useState, useEffect } from "react";
 import { todoApi } from "@/lib/api";
 import { TodoItem } from "@/types";
 import DetailModal from "./Modals/DetailModal";
+import EditModal from "./Modals/EditModal";
 import ErrorMessage from "./ErrorMessage";
 import LoadingMessage from "./LoadingMessage";
 
 const Todos = () => {
   const [todos, setTodos] = useState<TodoItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const [error, setError] = useState<string>("");
 
   const [selectedTodo, setSelectedTodo] = useState<TodoItem | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // データ取得
+  // 全てのtodoを取得
   const fetchTodos = async () => {
     try {
-      setLoading(true);
+      setIsLoading(true);
+      setLoadingMessage("todoの取得中です");
       const response = await todoApi.getAllTodos();
       setTodos(response.data.items);
       setError("");
@@ -25,7 +29,7 @@ const Todos = () => {
       console.error("Failed to fetch todos:", err);
       setError("Todoの取得に失敗しました");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -41,14 +45,50 @@ const Todos = () => {
     }
   };
 
-  const handleOpenDetail = (todo: TodoItem) => {
+  // todoの編集
+  const handleUpdateTodo = async (
+    id: number,
+    updateData: {
+      title: string;
+      content: string;
+    }
+  ) => {
+    try {
+      setIsLoading(true);
+      setLoadingMessage("編集中です");
+      const response = await todoApi.updateTodo(id, updateData);
+      setTodos(
+        todos.map((todo) => (todo.id === id ? response.data.item : todo))
+      );
+      setIsEditModalOpen(false);
+      setError("");
+    } catch (err) {
+      console.error("Failed to update todo:", err);
+      setError("Todoの更新に失敗しました");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOpenDetailModal = (todo: TodoItem) => {
     setSelectedTodo(todo);
     setIsDetailModalOpen(true);
     console.log(isDetailModalOpen);
   };
 
-  const closeModals = () => {
+  const closeDetailModal = () => {
     setIsDetailModalOpen(false);
+    setSelectedTodo(null);
+  };
+
+  const handleOpenEditModal = (todo: TodoItem) => {
+    setSelectedTodo(todo);
+    setIsEditModalOpen(true);
+    console.log(isEditModalOpen);
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
     setSelectedTodo(null);
   };
 
@@ -56,18 +96,14 @@ const Todos = () => {
     fetchTodos();
   }, []);
 
-  useEffect(() => {
-    console.log(todos);
-  }, [todos]);
-
   // エラー時の表示
   if (error) {
     return <ErrorMessage error={error} />;
   }
 
   // ローディング状態の表示
-  if (loading) {
-    return <LoadingMessage message="Todoの取得中です" />;
+  if (isLoading) {
+    return <LoadingMessage message={loadingMessage} />;
   }
 
   return (
@@ -98,11 +134,14 @@ const Todos = () => {
                       </span>
                       <button
                         className="px-2 py-1 text-white bg-blue-500 rounded cursor-pointer"
-                        onClick={() => handleOpenDetail(todo)}
+                        onClick={() => handleOpenDetailModal(todo)}
                       >
                         詳細
                       </button>
-                      <button className="px-2 py-1 text-white bg-green-500 rounded cursor-pointer">
+                      <button
+                        className="px-2 py-1 text-white bg-green-500 rounded cursor-pointer"
+                        onClick={() => handleOpenEditModal(todo)}
+                      >
                         編集
                       </button>
                       <button className="px-2 py-1 text-white bg-red-500 rounded cursor-pointer">
@@ -116,11 +155,22 @@ const Todos = () => {
           </div>
         )}
         {selectedTodo && (
-          <DetailModal
-            todo={selectedTodo}
-            isOpen={isDetailModalOpen}
-            onClose={closeModals}
-          />
+          <>
+            <DetailModal
+              modalMode="詳細"
+              selectedTodo={selectedTodo}
+              isOpen={isDetailModalOpen}
+              onClose={closeDetailModal}
+            />
+
+            <EditModal
+              modalMode="編集"
+              selectedTodo={selectedTodo}
+              isOpen={isEditModalOpen}
+              onClose={closeEditModal}
+              onUpdate={handleUpdateTodo}
+            />
+          </>
         )}
       </div>
     </div>
