@@ -56,6 +56,11 @@ const Todos = () => {
     title: string;
     content: string;
   }) => {
+    if (!createData.title.trim()) {
+      setError("タイトルは必須です");
+      return;
+    }
+
     try {
       setIsLoading(true);
       setLoadingMessage("todoの新規作成中です");
@@ -64,8 +69,17 @@ const Todos = () => {
       setIsCreateModalOpen(false);
       setError("");
     } catch (err) {
-      console.error("Failed to crate todo:", err);
-      setError("Todoの新規作成に失敗しました");
+      console.error("Failed to create todo:", err);
+
+      if (
+        err instanceof Error &&
+        "response" in err &&
+        (err as any).response?.status === 400
+      ) {
+        setError("入力内容を確認してください");
+      } else {
+        setError("Todoの新規作成に失敗しました");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -105,8 +119,8 @@ const Todos = () => {
       setIsConfirmDeleteModalOpen(false);
       setError("");
     } catch (err) {
-      console.error("Failed to update todo:", err);
-      setError("Todoの削除に失敗しました");
+      console.error("Failed to delete todo:", err);
+      setError("削除に失敗しました");
     } finally {
       setIsLoading(false);
     }
